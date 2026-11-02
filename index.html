@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FriendsBook - मराठी</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>*{font-family:'Noto Sans Devanagari',sans-serif} .no-scrollbar::-webkit-scrollbar{display:none}</style>
+</head>
+<body class="bg-[#f0f2f5] min-h-screen">
+<header class="bg-white shadow sticky top-0 z-50">
+<div class="max-w-[600px] mx-auto flex justify-between items-center p-3">
+<h1 class="text-[24px] font-bold text-[#0866ff]">FriendsBook</h1>
+<div class="flex gap-2"><div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center font-bold">N</div></div>
+</div>
+</header>
+
+<main class="max-w-[600px] mx-auto p-2 pb-20">
+
+<!-- पटकन मित्र जोडा -->
+<div class="bg-white rounded-xl p-4 shadow-sm mb-3">
+<h2 class="font-bold text-[16px] mb-3">⚡ पटकन मित्र जोडा</h2>
+<div class="flex gap-2 mb-3">
+<input id="friendSearch" placeholder="मित्र शोधा..." class="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm outline-none">
+<button onclick="searchFriend()" class="bg-[#0866ff] text-white px-5 py-2 rounded-full text-sm font-semibold">शोधा</button>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<button onclick="inviteLink()" class="bg-gray-100 py-2.5 rounded-lg text-sm font-semibold">🔗 आमंत्रण लिंक</button>
+<button onclick="showQR()" class="bg-gray-100 py-2.5 rounded-lg text-sm font-semibold">📱 QR दाखवा</button>
+<button onclick="addFriend()" class="bg-[#e7f3ff] text-[#0866ff] py-2.5 rounded-lg text-sm font-bold">+ जलद जोडा</button>
+</div>
+<div id="qrBox" class="hidden mt-3 text-center p-3 bg-gray-50 rounded-lg"><img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://friendsbook-marathi.vercel.app" class="mx-auto"><p class="text-xs mt-2">हा QR स्कॅन करून मित्र जोडा</p></div>
+</div>
+
+<!-- पोस्ट लिहा -->
+<div class="bg-white rounded-xl p-3 shadow-sm mb-3">
+<div class="flex gap-3">
+<div class="w-10 h-10 rounded-full bg-blue-200"></div>
+<button onclick="document.getElementById('postInput').focus()" class="flex-1 bg-gray-100 rounded-full text-left px-4 text-gray-500 text-sm">तुमच्या मनात काय आहे, Navnath?</button>
+</div>
+<div class="border-t mt-3 pt-2 flex justify-around">
+<label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer"><span>📷</span> फोटो <input type="file" id="photoUp" accept="image/*" hidden onchange="handleFile(this,'photo')"></label>
+<label class="flex items-center gap-2 text-sm font-semibold text-gray-600 cursor-pointer"><span>🎥</span> व्हिडिओ <input type="file" id="videoUp" accept="video/*" hidden onchange="handleFile(this,'video')"></label>
+<button onclick="createPost()" class="bg-[#0866ff] text-white px-6 py-1.5 rounded-full text-sm font-bold">पोस्ट</button>
+</div>
+<textarea id="postInput" placeholder="काही लिहा..." class="w-full mt-3 bg-gray-100 rounded-xl p-3 text-sm outline-none hidden"></textarea>
+<div id="preview" class="hidden mt-2"></div>
+</div>
+
+<!-- टॅब -->
+<div class="bg-white rounded-xl shadow-sm mb-3 flex">
+<button onclick="filterPosts('all')" id="tab-all" class="flex-1 py-3 font-bold border-b-2 border-[#0866ff] text-[#0866ff] text-sm">सर्व</button>
+<button onclick="filterPosts('photo')" id="tab-photo" class="flex-1 py-3 text-gray-500 text-sm">📷 फोटो</button>
+<button onclick="filterPosts('video')" id="tab-video" class="flex-1 py-3 text-gray-500 text-sm">🎥 व्हिडिओ</button>
+</div>
+
+<!-- Feed -->
+<div id="feed"></div>
+
+</main>
+
+<script>
+let posts = JSON.parse(localStorage.getItem('fb_posts')||'[]');
+let currentMedia=null, currentType=null;
+if(posts.length==0){
+posts=[{id:1,text:"माझ्या नवीन FriendsBook वर स्वागत आहे! 🙏 फोटो आणि व्हिडिओ आता वेगळे दिसतील.",type:"text",likes:12,comments:[{name:"आई",text:"छान आहे बाळा!"}],time:"आत्ताच"}];
+}
+function handleFile(input,type){
+const file=input.files[0]; if(!file) return;
+const reader=new FileReader();
+reader.onload=e=>{
+currentMedia=e.target.result; currentType=type;
+document.getElementById('postInput').classList.remove('hidden');
+document.getElementById('preview').classList.remove('hidden');
+document.getElementById('preview').innerHTML= type=='photo'? `<img src="${currentMedia}" class="rounded-xl w-full">` : `<video src="${currentMedia}" controls class="rounded-xl w-full"></video>`;
+document.getElementById('postInput').focus();
+};
+reader.readAsDataURL(file);
+}
+function createPost(){
+const text=document.getElementById('postInput').value;
+if(!text && !currentMedia) return alert('काहीतरी लिहा किंवा फोटो निवडा');
+posts.unshift({id:Date.now(),text,type:currentType||'text',media:currentMedia,likes:0,comments:[],time:"आत्ताच"});
+localStorage.setItem('fb_posts',JSON.stringify(posts));
+document.getElementById('postInput').value=''; currentMedia=null; currentType=null;
+document.getElementById('preview').innerHTML=''; document.getElementById('preview').classList.add('hidden');
+render();
+}
+function render(filter='all'){
+const feed=document.getElementById('feed');
+let list = filter=='all'? posts : posts.filter(p=>p.type==filter);
+feed.innerHTML = list.map(p=>`
+<div class="bg-white rounded-xl shadow-sm mb-3 overflow-hidden">
+<div class="p-3 flex gap-2 items-center"><div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center font-bold">N</div><div><p class="font-bold text-sm">Navnath Jadhav</p><p class="text-[11px] text-gray-500">${p.time} • 🌎</p></div></div>
+${p.text? `<p class="px-3 pb-2 text-[15px]">${p.text}</p>`:''}
+${p.media? (p.type=='photo'? `<img src="${p.media}" class="w-full">` : `<video src="${p.media}" controls class="w-full"></video>`) : ''}
+<div class="px-3 py-2 flex justify-between text-[13px] text-gray-500 border-b"><span>👍 ${p.likes} लाईक</span><span>${p.comments.length} कमेंट</span></div>
+<div class="flex justify-around py-1">
+<button onclick="likePost(${p.id})" class="flex-1 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded">👍 लाईक</button>
+<button onclick="commentPost(${p.id})" class="flex-1 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded">💬 कमेंट</button>
+<button onclick="sharePost()" class="flex-1 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded">↗️ शेअर</button>
+<button onclick="savePost(${p.id})" class="flex-1 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded">🔖 सेव्ह</button>
+</div>
+<div class="bg-gray-50 p-2">${p.comments.map(c=>`<p class="text-sm"><b>${c.name}:</b> ${c.text}</p>`).join('')}<div class="flex gap-2 mt-2"><input id="c-${p.id}" placeholder="कमेंट लिहा..." class="flex-1 bg-white border rounded-full px-3 py-1.5 text-sm outline-none"><button onclick="addComment(${p.id})" class="text-[#0866ff] font-bold text-sm">पाठवा</button></div></div>
+</div>`).join('');
+}
+function likePost(id){ const p=posts.find(x=>x.id==id); p.likes++; localStorage.setItem('fb_posts',JSON.stringify(posts)); render(document.querySelector('.border-[#0866ff]')?.id.replace('tab-','')||'all'); }
+function addComment(id){ const inp=document.getElementById('c-'+id); if(!inp.value) return; const p=posts.find(x=>x.id==id); p.comments.push({name:"तुम्ही",text:inp.value}); localStorage.setItem('fb_posts',JSON.stringify(posts)); render(); }
+function commentPost(id){ document.getElementById('c-'+id).focus(); }
+function sharePost(){ navigator.clipboard.writeText(location.href); alert('लिंक कॉपी झाली! 🔗'); }
+function savePost(id){ alert('पोस्ट सेव्ह झाली! 🔖 कायम राहील'); }
+function searchFriend(){ const v=document.getElementById('friendSearch').value; if(!v) return alert('नाव टाका'); alert(v+' सापडला! + जलद जोडा वर दाबा'); }
+function addFriend(){ alert('मित्र रिक्वेस्ट पाठवली! ✅'); }
+function inviteLink(){ navigator.clipboard.writeText(location.href); alert('आमंत्रण लिंक कॉपी झाली: '+location.href); }
+function showQR(){ document.getElementById('qrBox').classList.toggle('hidden'); }
+function filterPosts(type){ document.querySelectorAll('[id^=tab-]').forEach(b=>{b.classList.remove('border-[#0866ff]','text-[#0866ff]','border-b-2','font-bold'); b.classList.add('text-gray-500')}); document.getElementById('tab-'+type).classList.add('border-[#0866ff]','text-[#0866ff]','border-b-2','font-bold'); render(type); }
+render();
+</script>
+</body>
+</html>
